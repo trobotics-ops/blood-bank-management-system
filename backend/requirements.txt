@@ -1,0 +1,7 @@
+flask==3.0.0
+flask-cors==4.0.0
+flask-mail==0.9.1
+firebase-admin==6.2.0
+python-dotenv==1.0.0
+gunicorn==21.2.0
+marshmallow==3.20.1

@@ -1,0 +1,79 @@
+import { auth } from '../lib/firebase';
+
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+async function getAuthHeaders() {
+  const currentUser = auth.currentUser;
+  if (currentUser) {
+    const token = await currentUser.getIdToken();
+    return {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    };
+  }
+  return { 'Content-Type': 'application/json' };
+}
+
+async function handleResponse(response) {
+  if (response.status === 401) {
+    window.location.href = '/login';
+    throw new Error('Unauthorized');
+  }
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    const message = data?.message || data?.error || `HTTP error ${response.status}`;
+    throw new Error(message);
+  }
+
+  return data;
+}
+
+export async function apiGet(endpoint) {
+  const headers = await getAuthHeaders();
+  const response = await fetch(`${BASE_URL}${endpoint}`, {
+    method: 'GET',
+    headers,
+  });
+  return handleResponse(response);
+}
+
+export async function apiPost(endpoint, body) {
+  const headers = await getAuthHeaders();
+  const response = await fetch(`${BASE_URL}${endpoint}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
+  });
+  return handleResponse(response);
+}
+
+export async function apiPut(endpoint, body) {
+  const headers = await getAuthHeaders();
+  const response = await fetch(`${BASE_URL}${endpoint}`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify(body),
+  });
+  return handleResponse(response);
+}
+
+export async function apiPatch(endpoint, body) {
+  const headers = await getAuthHeaders();
+  const response = await fetch(`${BASE_URL}${endpoint}`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify(body),
+  });
+  return handleResponse(response);
+}
+
+export async function apiDelete(endpoint) {
+  const headers = await getAuthHeaders();
+  const response = await fetch(`${BASE_URL}${endpoint}`, {
+    method: 'DELETE',
+    headers,
+  });
+  return handleResponse(response);
+}
