@@ -31,6 +31,16 @@ def get_current_user():
     doc = db.collection("users").document(uid).get()
 
     if not doc.exists:
+        if uid.startswith("demo-"):
+            role = request.user.get("role", "donor")
+            return jsonify({
+                "uid": uid,
+                "email": request.user.get("email"),
+                "displayName": f"Demo {role.capitalize()}",
+                "role": role,
+                "phone": "+1-555-0199",
+                "organizationName": "City General Hospital" if role == "hospital" else "",
+            }), 200
         return jsonify({"error": "User profile not found", "status": 404}), 404
 
     data = doc.to_dict()
@@ -71,6 +81,16 @@ def update_current_user():
     doc = doc_ref.get()
 
     if not doc.exists:
+        if uid.startswith("demo-"):
+            role = request.user.get("role", "donor")
+            return jsonify({
+                "uid": uid,
+                "email": request.user.get("email"),
+                "displayName": f"Demo {role.capitalize()}",
+                "role": role,
+                "phone": "+1-555-0199",
+                "organizationName": "City General Hospital" if role == "hospital" else "",
+            }), 200
         return jsonify({"error": "User profile not found", "status": 404}), 404
 
     now = datetime.now(timezone.utc)

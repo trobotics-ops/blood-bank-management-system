@@ -14,6 +14,7 @@ steps:
     args: ['run', 'build']
     env:
       - 'VITE_FIREBASE_PROJECT_ID=$PROJECT_ID'
+      - 'VITE_FIREBASE_API_KEY=AIzaSyDemoKeyBloodBankApp2026ValidFormatX'
       - 'VITE_API_URL='
 
   # 3. Copy frontend distribution into backend static assets

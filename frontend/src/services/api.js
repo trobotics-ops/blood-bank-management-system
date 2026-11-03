@@ -3,20 +3,35 @@ import { auth } from '../lib/firebase';
 const BASE_URL = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? 'http://localhost:5000' : '');
 
 async function getAuthHeaders() {
-  const currentUser = auth.currentUser;
+  const currentUser = auth?.currentUser;
   if (currentUser) {
-    const token = await currentUser.getIdToken();
+    try {
+      const token = await currentUser.getIdToken();
+      return {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      };
+    } catch {
+      // Continue to check local demo token
+    }
+  }
+
+  const demoToken = typeof window !== 'undefined' ? localStorage.getItem('demo_token') : null;
+  if (demoToken) {
     return {
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${demoToken}`,
       'Content-Type': 'application/json',
     };
   }
+
   return { 'Content-Type': 'application/json' };
 }
 
 async function handleResponse(response) {
   if (response.status === 401) {
-    window.location.href = '/login';
+    if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+      window.location.href = '/login';
+    }
     throw new Error('Unauthorized');
   }
 

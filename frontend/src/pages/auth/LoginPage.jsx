@@ -5,11 +5,11 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
-import { Droplets, Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Droplets, Mail, Lock, Eye, EyeOff, Loader2, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function LoginPage() {
-  const { user, login, loginWithGoogle } = useAuth();
+  const { user, login, loginWithGoogle, loginAsDemo } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -50,21 +50,21 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center gradient-bg pattern-dots px-4">
+    <div className="min-h-screen flex items-center justify-center gradient-bg pattern-dots px-4 py-8">
       <div className="w-full max-w-md animate-fade-in">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary text-primary-foreground mb-4 shadow-lg">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary text-primary-foreground mb-4 shadow-lg shadow-primary/20">
             <Droplets className="h-8 w-8" />
           </div>
           <h1 className="text-3xl font-bold text-foreground">BloodBank</h1>
-          <p className="text-muted mt-1">Cloud Blood Bank Management System</p>
+          <p className="text-muted mt-1 text-sm">Cloud Blood Bank Management System</p>
         </div>
 
         <Card className="shadow-xl border-0">
           <CardHeader className="text-center pb-2">
-            <CardTitle className="text-xl">Welcome back</CardTitle>
-            <CardDescription>Sign in to your account to continue</CardDescription>
+            <CardTitle className="text-xl font-bold">Welcome back</CardTitle>
+            <CardDescription>Sign in to your account or explore via demo roles</CardDescription>
           </CardHeader>
           <CardContent className="pt-4">
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -108,11 +108,65 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" disabled={loading}>
+              <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium" disabled={loading}>
                 {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                 Sign In
               </Button>
             </form>
+
+            {/* Quick Demo Access Buttons */}
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted flex items-center gap-1">
+                  <Sparkles className="h-3 w-3 text-amber-500" /> 1-Click Demo Access
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-xs font-medium border-red-200 hover:bg-red-50 text-red-700 hover:text-red-800"
+                onClick={() => {
+                  loginAsDemo('admin');
+                  toast.success('Signed in as Administrator');
+                  navigate('/dashboard');
+                }}
+              >
+                Admin
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-xs font-medium border-blue-200 hover:bg-blue-50 text-blue-700 hover:text-blue-800"
+                onClick={() => {
+                  loginAsDemo('hospital');
+                  toast.success('Signed in as Hospital Staff');
+                  navigate('/dashboard');
+                }}
+              >
+                Hospital
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-xs font-medium border-emerald-200 hover:bg-emerald-50 text-emerald-700 hover:text-emerald-800"
+                onClick={() => {
+                  loginAsDemo('donor');
+                  toast.success('Signed in as Blood Donor');
+                  navigate('/dashboard');
+                }}
+              >
+                Donor
+              </Button>
+            </div>
 
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
