@@ -1,8 +1,10 @@
 """Inventory routes — CRUD endpoints for blood units."""
 
 import logging
+from datetime import datetime, timezone
 
 from flask import Blueprint, request, jsonify
+from google.cloud.firestore_v1.base_query import FieldFilter
 from marshmallow import ValidationError
 
 from app.auth import require_auth, require_role
@@ -14,6 +16,7 @@ inventory_bp = Blueprint("inventory", __name__, url_prefix="/api/inventory")
 
 
 @inventory_bp.route("/summary", methods=["GET"])
+@inventory_bp.route("/stock", methods=["GET"])
 @require_auth
 def get_summary():
     """Get blood stock summary grouped by blood type.
@@ -25,6 +28,28 @@ def get_summary():
     """
     summary = inventory_service.get_inventory_summary()
     return jsonify(summary), 200
+
+
+@inventory_bp.route("/stats", methods=["GET"])
+@require_auth
+def get_inventory_stats():
+    """Get inventory statistics overview.
+
+    Returns:
+        200: Inventory stats object.
+    """
+    summary = inventory_service.get_inventory_summary()
+    total_units = sum(s.get("totalUnits", 0) for s in summary)
+    critical_types = sum(1 for s in summary if s.get("totalUnits", 0) < 5)
+    expiring = inventory_service.get_expiring_units(days=7)
+
+    return jsonify({
+        "totalUnits": total_units,
+        "totalTypes": len(summary),
+        "criticalTypes": critical_types,
+        "expiringIn7Days": len(expiring),
+        "stockByType": summary,
+    }), 200
 
 
 @inventory_bp.route("/expiring", methods=["GET"])
@@ -42,6 +67,59 @@ def get_expiring():
     days = request.args.get("days", 7, type=int)
     units = inventory_service.get_expiring_units(days=days)
     return jsonify(units), 200
+
+
+@inventory_bp.route("/check-expiry", methods=["POST"])
+def check_expiry():
+    """Cron-friendly endpoint: mark expired units and create admin notifications.
+
+    Callable periodically by Cloud Scheduler or a cron task.
+
+    Returns:
+        200: Summary of marked expired units and expiring units count.
+    """
+    from app.services import notification_service as ns
+
+    db = inventory_service._db()
+    today_str = datetime.now(timezone.utc).date().strftime("%Y-%m-%d")
+
+    # 1. Mark expired units
+    expired_docs = (
+        db.collection(inventory_service.COLLECTION)
+        .where(filter=FieldFilter("status", "==", "available"))
+        .where(filter=FieldFilter("expiryDate", "<", today_str))
+        .stream()
+    )
+    expired_count = 0
+    for doc in expired_docs:
+        doc.reference.update({
+            "status": "expired",
+            "updatedAt": datetime.now(timezone.utc),
+        })
+        expired_count += 1
+
+    # 2. Check expiring units within 7 days
+    expiring_units = inventory_service.get_expiring_units(days=7)
+
+    if expiring_units:
+        admin_docs = (
+            db.collection("users")
+            .where(filter=FieldFilter("role", "==", "admin"))
+            .stream()
+        )
+        for admin_doc in admin_docs:
+            ns.create_notification(
+                recipient_uid=admin_doc.id,
+                notification_type="expiry_alert",
+                title="Blood Units Expiring Soon",
+                message=f"{len(expiring_units)} blood unit(s) are expiring within the next 7 days.",
+                related_entity_type="inventory",
+            )
+
+    return jsonify({
+        "expiredMarked": expired_count,
+        "expiringIn7Days": len(expiring_units),
+    }), 200
 
 
 @inventory_bp.route("", methods=["GET"])

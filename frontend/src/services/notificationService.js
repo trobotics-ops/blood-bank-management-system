@@ -1,4 +1,4 @@
-import { apiGet, apiPut } from './api';
+import { apiGet, apiPut, apiPatch } from './api';
 
 export async function getNotifications() {
   return apiGet('/api/notifications');
@@ -9,7 +9,7 @@ export async function getUnreadCount() {
 }
 
 export async function markAsRead(notificationId) {
-  return apiPut(`/api/notifications/${notificationId}/read`);
+  return apiPatch(`/api/notifications/${notificationId}/read`);
 }
 
 export async function markAllAsRead() {

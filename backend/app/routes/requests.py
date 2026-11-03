@@ -13,6 +13,50 @@ logger = logging.getLogger(__name__)
 requests_bp = Blueprint("requests", __name__, url_prefix="/api/requests")
 
 
+@requests_bp.route("/my", methods=["GET"])
+@require_auth
+def get_my_requests():
+    """Get blood requests submitted by the current authenticated hospital user.
+
+    Returns:
+        200: List of blood requests.
+    """
+    uid = request.user["uid"]
+    requests_list = request_service.list_requests(
+        uid=uid,
+        role="hospital",
+        limit=100,
+    )
+    return jsonify(requests_list), 200
+
+
+@requests_bp.route("/stats", methods=["GET"])
+@require_auth
+def get_request_stats():
+    """Get blood request summary statistics.
+
+    Returns:
+        200: Aggregated request counts.
+    """
+    uid = request.user["uid"]
+    role = request.user["role"]
+
+    all_requests = request_service.list_requests(
+        uid=uid,
+        role=role,
+        limit=1000,
+    )
+
+    stats = {
+        "total": len(all_requests),
+        "pending": sum(1 for r in all_requests if r.get("status") == "pending"),
+        "approved": sum(1 for r in all_requests if r.get("status") == "approved"),
+        "rejected": sum(1 for r in all_requests if r.get("status") == "rejected"),
+        "fulfilled": sum(1 for r in all_requests if r.get("status") == "fulfilled"),
+    }
+    return jsonify(stats), 200
+
+
 @requests_bp.route("", methods=["GET"])
 @require_auth
 def list_requests():

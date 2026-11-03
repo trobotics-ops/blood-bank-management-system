@@ -10,7 +10,7 @@ export async function getDonorById(id) {
 }
 
 export async function getDonorProfile() {
-  return apiGet('/api/donors/profile');
+  return apiGet('/api/donors/me');
 }
 
 export async function registerDonor(donorData) {
@@ -18,7 +18,7 @@ export async function registerDonor(donorData) {
 }
 
 export async function updateDonorProfile(donorData) {
-  return apiPut('/api/donors/profile', donorData);
+  return apiPut('/api/donors/me', donorData);
 }
 
 export async function searchDonors(params = {}) {

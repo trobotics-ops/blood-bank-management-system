@@ -43,7 +43,20 @@ def get_unread_count():
     return jsonify({"unreadCount": count}), 200
 
 
-@notifications_bp.route("/<notification_id>/read", methods=["PATCH"])
+@notifications_bp.route("/read-all", methods=["PUT", "POST"])
+@require_auth
+def mark_all_notifications_read():
+    """Mark all notifications as read for the current user.
+
+    Returns:
+        200: { "markedRead": <int> }
+    """
+    uid = request.user["uid"]
+    marked = notification_service.mark_all_as_read(uid)
+    return jsonify({"message": "All notifications marked as read", "markedRead": marked}), 200
+
+
+@notifications_bp.route("/<notification_id>/read", methods=["PATCH", "PUT"])
 @require_auth
 def mark_notification_read(notification_id: str):
     """Mark a notification as read.

@@ -120,6 +120,40 @@ def mark_as_read(notification_id: str, uid: str) -> Optional[dict]:
     return data
 
 
+def mark_all_as_read(uid: str) -> int:
+    """Mark all unread notifications for a user as read.
+
+    Args:
+        uid: UID of the requesting user.
+
+    Returns:
+        Number of notifications marked as read.
+    """
+    db = _db()
+    docs = (
+        db.collection(COLLECTION)
+        .where(filter=FieldFilter("recipientUid", "==", uid))
+        .where(filter=FieldFilter("isRead", "==", False))
+        .stream()
+    )
+
+    count = 0
+    batch = db.batch()
+    for doc in docs:
+        batch.update(doc.reference, {"isRead": True})
+        count += 1
+        # Commit batch every 400 operations if large
+        if count % 400 == 0:
+            batch.commit()
+            batch = db.batch()
+
+    if count % 400 != 0:
+        batch.commit()
+
+    logger.info("Marked %d notifications as read for user %s", count, uid)
+    return count
+
+
 def get_unread_count(uid: str) -> int:
     """Return the number of unread notifications for a user.
 

@@ -1,7 +1,7 @@
 """Camp service — business logic and Firestore CRUD for blood donation camps."""
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional
 
 from firebase_admin import firestore
@@ -264,3 +264,40 @@ def complete_camp(camp_id: str, units_collected: int) -> Optional[dict]:
     data["id"] = camp_id
     logger.info("Camp %s completed with %d units collected", camp_id, units_collected)
     return _serialise_timestamps(data)
+
+
+def send_camp_reminders() -> int:
+    """Send reminder notifications for upcoming camps happening tomorrow.
+
+    Returns:
+        Total number of reminders sent.
+    """
+    db = _db()
+    tomorrow_str = (datetime.now(timezone.utc).date() + timedelta(days=1)).strftime("%Y-%m-%d")
+
+    camps = list_camps(status="upcoming", limit=500)
+    reminders_sent = 0
+
+    for camp in camps:
+        if camp.get("date") == tomorrow_str:
+            for donor_id in camp.get("registeredDonors", []):
+                donor_doc = db.collection("donors").document(donor_id).get()
+                if donor_doc.exists:
+                    donor_data = donor_doc.to_dict()
+                    donor_uid = donor_data.get("uid")
+                    if donor_uid:
+                        notification_service.create_notification(
+                            recipient_uid=donor_uid,
+                            notification_type="camp_reminder",
+                            title="Reminder: Donation Camp Tomorrow!",
+                            message=(
+                                f"Friendly reminder that {camp['name']} takes place tomorrow at "
+                                f"{camp['venue']}, {camp['city']} ({camp.get('startTime', '09:00')} - {camp.get('endTime', '17:00')})."
+                            ),
+                            related_entity_type="camp",
+                            related_entity_id=camp.get("id"),
+                        )
+                        reminders_sent += 1
+
+    logger.info("Sent %d camp reminders for %s", reminders_sent, tomorrow_str)
+    return reminders_sent

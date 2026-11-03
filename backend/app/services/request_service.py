@@ -10,6 +10,7 @@ from marshmallow import ValidationError
 
 from app.models.request import RequestSchema
 from app.services import notification_service
+from app.utils.blood_compatibility import get_compatible_donors
 
 logger = logging.getLogger(__name__)
 
@@ -77,14 +78,13 @@ def _notify_admins_new_request(db, request_id: str, request_data: dict) -> None:
             .stream()
         )
         for admin_doc in admin_docs:
-            admin = admin_doc.to_dict()
             notification_service.create_notification(
                 recipient_uid=admin_doc.id,
                 notification_type="request_update",
                 title="New Blood Request",
                 message=(
                     f"New {request_data.get('urgencyLevel', 'normal')} request for "
-                    f"{request_data.get('bloodType')} from "
+                    f"{request_data.get('bloodType')} ({request_data.get('unitsNeeded', 1)} unit(s)) from "
                     f"{request_data.get('hospitalName')}."
                 ),
                 related_entity_type="request",
@@ -143,8 +143,43 @@ def list_requests(
     return results
 
 
+def _auto_match_inventory(request_data: dict) -> list[dict]:
+    """Check inventory for compatible blood types matching this request."""
+    blood_type = request_data.get("bloodType")
+    if not blood_type:
+        return []
+
+    compatible_types = get_compatible_donors(blood_type)
+    db = _db()
+
+    matches = []
+    try:
+        for ctype in compatible_types:
+            docs = (
+                db.collection("bloodInventory")
+                .where(filter=FieldFilter("bloodType", "==", ctype))
+                .where(filter=FieldFilter("status", "==", "available"))
+                .limit(5)
+                .stream()
+            )
+            for doc in docs:
+                item = doc.to_dict()
+                item["id"] = doc.id
+                matches.append(item)
+        logger.info(
+            "Found %d compatible units for request %s (%s)",
+            len(matches),
+            request_data.get("id"),
+            blood_type,
+        )
+    except Exception as exc:
+        logger.error("Auto match inventory error: %s", exc)
+
+    return matches
+
+
 def approve_request(request_id: str, admin_uid: str) -> Optional[dict]:
-    """Approve a pending blood request.
+    """Approve a pending blood request with compatible inventory matching.
 
     Args:
         request_id: Firestore document ID.
@@ -167,6 +202,10 @@ def approve_request(request_id: str, admin_uid: str) -> Optional[dict]:
     if data.get("status") != "pending":
         raise ValueError(f"Request is already '{data.get('status')}', cannot approve")
 
+    # Match compatible inventory units
+    data["id"] = request_id
+    matches = _auto_match_inventory(data)
+
     now = datetime.now(timezone.utc)
     update = {
         "status": "approved",
@@ -175,14 +214,14 @@ def approve_request(request_id: str, admin_uid: str) -> Optional[dict]:
     }
     doc_ref.update(update)
     data.update(update)
-    data["id"] = request_id
 
     # Notify the requester
+    match_msg = f" Compatible stock identified: {len(matches)} unit(s) available." if matches else ""
     notification_service.create_notification(
         recipient_uid=data.get("requestedBy", ""),
         notification_type="request_update",
         title="Blood Request Approved",
-        message=f"Your request for {data.get('bloodType')} has been approved.",
+        message=f"Your request for {data.get('bloodType')} ({data.get('unitsNeeded', 1)} unit(s)) has been approved.{match_msg}",
         related_entity_type="request",
         related_entity_id=request_id,
     )
@@ -234,7 +273,7 @@ def reject_request(
         recipient_uid=data.get("requestedBy", ""),
         notification_type="request_update",
         title="Blood Request Rejected",
-        message=f"Your request for {data.get('bloodType')} has been rejected. Reason: {rejection_reason}",
+        message=f"Your request for {data.get('bloodType')} was rejected. Reason: {rejection_reason}",
         related_entity_type="request",
         related_entity_id=request_id,
     )
@@ -282,7 +321,7 @@ def fulfill_request(request_id: str, admin_uid: str) -> Optional[dict]:
         recipient_uid=data.get("requestedBy", ""),
         notification_type="request_update",
         title="Blood Request Fulfilled",
-        message=f"Your request for {data.get('bloodType')} has been fulfilled.",
+        message=f"Your blood request for {data.get('bloodType')} ({data.get('unitsNeeded', 1)} unit(s)) has been fulfilled.",
         related_entity_type="request",
         related_entity_id=request_id,
     )

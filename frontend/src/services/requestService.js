@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPut } from './api';
+import { apiGet, apiPost, apiPut, apiPatch } from './api';
 
 export async function getAllRequests(params = {}) {
   const query = new URLSearchParams(params).toString();
@@ -15,6 +15,18 @@ export async function getRequestById(id) {
 
 export async function createRequest(requestData) {
   return apiPost('/api/requests', requestData);
+}
+
+export async function approveRequest(id) {
+  return apiPatch(`/api/requests/${id}/approve`);
+}
+
+export async function rejectRequest(id, rejectionReason) {
+  return apiPatch(`/api/requests/${id}/reject`, { rejectionReason });
+}
+
+export async function fulfillRequest(id) {
+  return apiPatch(`/api/requests/${id}/fulfill`);
 }
 
 export async function updateRequestStatus(id, status, notes) {

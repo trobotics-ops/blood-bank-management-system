@@ -14,6 +14,7 @@ donors_bp = Blueprint("donors", __name__, url_prefix="/api/donors")
 
 
 @donors_bp.route("/me", methods=["GET"])
+@donors_bp.route("/profile", methods=["GET"])
 @require_auth
 def get_my_donor_profile():
     """Get the current authenticated user's donor profile.
@@ -27,6 +28,74 @@ def get_my_donor_profile():
     if not donor:
         return jsonify({"error": "No donor profile found for this user", "status": 404}), 404
     return jsonify(donor), 200
+
+
+@donors_bp.route("/me", methods=["PUT"])
+@donors_bp.route("/profile", methods=["PUT"])
+@require_auth
+def update_my_donor_profile():
+    """Update the current authenticated user's donor profile.
+
+    Returns:
+        200: Updated donor profile.
+        400: Validation error.
+        404: Donor profile not found.
+    """
+    uid = request.user["uid"]
+    donor = donor_service.get_donor_by_uid(uid)
+    if not donor:
+        return jsonify({"error": "No donor profile found for this user", "status": 404}), 404
+
+    body = request.get_json(silent=True) or {}
+    try:
+        updated = donor_service.update_donor(donor["id"], body, uid)
+    except ValidationError as err:
+        return jsonify({"error": err.messages, "status": 400}), 400
+
+    return jsonify(updated), 200
+
+
+@donors_bp.route("/history", methods=["GET"])
+@require_auth
+def get_donation_history():
+    """Get the current authenticated donor's donation history.
+
+    Returns:
+        200: Donation history and total stats.
+        404: Donor not found.
+    """
+    uid = request.user["uid"]
+    donor = donor_service.get_donor_by_uid(uid)
+    if not donor:
+        return jsonify({"error": "No donor profile found", "status": 404}), 404
+
+    return jsonify({
+        "totalDonations": donor.get("totalDonations", 0),
+        "lastDonationDate": donor.get("lastDonationDate"),
+        "history": [],
+    }), 200
+
+
+@donors_bp.route("/stats", methods=["GET"])
+@require_auth
+def get_donor_stats():
+    """Get statistics for the current donor.
+
+    Returns:
+        200: Donor statistics.
+        404: Donor not found.
+    """
+    uid = request.user["uid"]
+    donor = donor_service.get_donor_by_uid(uid)
+    if not donor:
+        return jsonify({"error": "No donor profile found", "status": 404}), 404
+
+    return jsonify({
+        "totalDonations": donor.get("totalDonations", 0),
+        "isEligible": donor.get("isEligible", False),
+        "bloodType": donor.get("bloodType"),
+        "lastDonationDate": donor.get("lastDonationDate"),
+    }), 200
 
 
 @donors_bp.route("/search", methods=["GET"])

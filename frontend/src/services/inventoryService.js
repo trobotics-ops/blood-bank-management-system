@@ -22,7 +22,7 @@ export async function deleteBloodUnit(id) {
 }
 
 export async function getBloodStock() {
-  return apiGet('/api/inventory/stock');
+  return apiGet('/api/inventory/summary');
 }
 
 export async function getExpiringUnits(days = 7) {

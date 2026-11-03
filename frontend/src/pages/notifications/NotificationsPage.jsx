@@ -106,7 +106,7 @@ export default function NotificationsPage() {
           <p className="text-muted text-sm mt-1">
             {unreadCount > 0
               ? `You have ${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}`
-              : 'You're all caught up'}
+              : "You're all caught up"}
           </p>
         </div>
         {unreadCount > 0 && (

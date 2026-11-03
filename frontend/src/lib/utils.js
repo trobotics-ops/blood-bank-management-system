@@ -55,6 +55,8 @@ export const URGENCY_LEVELS = ['Normal', 'Urgent', 'Critical'];
 
 export const REQUEST_STATUSES = ['Pending', 'Approved', 'Rejected', 'Fulfilled'];
 
+export const CAMP_STATUSES = ['Upcoming', 'Ongoing', 'Completed', 'Cancelled'];
+
 export function getStockColor(units) {
   if (units < 5) return 'text-red-600';
   if (units <= 10) return 'text-orange-500';
@@ -74,24 +76,34 @@ export function getStockBarColor(units) {
 }
 
 export function getStatusColor(status) {
+  if (!status) return 'bg-gray-100 text-gray-800';
+  const key = String(status).toLowerCase();
   const colors = {
-    Pending: 'bg-yellow-100 text-yellow-800',
-    Approved: 'bg-blue-100 text-blue-800',
-    Rejected: 'bg-red-100 text-red-800',
-    Fulfilled: 'bg-green-100 text-green-800',
-    Active: 'bg-green-100 text-green-800',
-    Expired: 'bg-gray-100 text-gray-800',
-    Used: 'bg-blue-100 text-blue-800',
-    Discarded: 'bg-red-100 text-red-800',
+    pending: 'bg-yellow-100 text-yellow-800',
+    approved: 'bg-blue-100 text-blue-800',
+    rejected: 'bg-red-100 text-red-800',
+    fulfilled: 'bg-green-100 text-green-800',
+    active: 'bg-green-100 text-green-800',
+    available: 'bg-green-100 text-green-800',
+    reserved: 'bg-blue-100 text-blue-800',
+    expired: 'bg-gray-100 text-gray-800',
+    used: 'bg-blue-100 text-blue-800',
+    discarded: 'bg-red-100 text-red-800',
+    upcoming: 'bg-blue-100 text-blue-800',
+    ongoing: 'bg-green-100 text-green-800',
+    completed: 'bg-gray-100 text-gray-800',
+    cancelled: 'bg-red-100 text-red-800',
   };
-  return colors[status] || 'bg-gray-100 text-gray-800';
+  return colors[key] || 'bg-gray-100 text-gray-800';
 }
 
 export function getUrgencyColor(urgency) {
+  if (!urgency) return 'bg-gray-100 text-gray-800';
+  const key = String(urgency).toLowerCase();
   const colors = {
-    Normal: 'bg-green-100 text-green-800',
-    Urgent: 'bg-orange-100 text-orange-800',
-    Critical: 'bg-red-100 text-red-800',
+    normal: 'bg-green-100 text-green-800',
+    urgent: 'bg-orange-100 text-orange-800',
+    critical: 'bg-red-100 text-red-800',
   };
-  return colors[urgency] || 'bg-gray-100 text-gray-800';
+  return colors[key] || 'bg-gray-100 text-gray-800';
 }

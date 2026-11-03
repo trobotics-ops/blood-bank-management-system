@@ -56,6 +56,37 @@ def calculate_expiry_date(collection_date: str, component: str) -> str:
     return expiry.strftime("%Y-%m-%d")
 
 
+def check_low_stock_alerts() -> None:
+    """Check if any blood type has fewer than 5 available units and create admin notifications."""
+    from app.services import notification_service
+
+    try:
+        db = _db()
+        summary = get_inventory_summary()
+        low_types = [s for s in summary if s.get("totalUnits", 0) < 5]
+
+        if not low_types:
+            return
+
+        type_list = ", ".join(f"{s['bloodType']} ({s['totalUnits']} units)" for s in low_types)
+        admin_docs = (
+            db.collection("users")
+            .where(filter=FieldFilter("role", "==", "admin"))
+            .stream()
+        )
+        for admin_doc in admin_docs:
+            notification_service.create_notification(
+                recipient_uid=admin_doc.id,
+                notification_type="low_stock",
+                title="Low Blood Stock Warning",
+                message=f"Critical low stock levels detected: {type_list}",
+                related_entity_type="inventory",
+            )
+        logger.info("Low stock alerts sent for: %s", type_list)
+    except Exception as exc:
+        logger.error("Failed to check low stock alerts: %s", exc)
+
+
 def create_blood_unit(data: dict, admin_uid: str) -> dict:
     """Add a new blood unit to inventory.
 
@@ -86,6 +117,10 @@ def create_blood_unit(data: dict, admin_uid: str) -> dict:
     doc_id = doc_ref[1].id
     validated["id"] = doc_id
     logger.info("Blood unit created: %s (%s)", doc_id, validated["bloodType"])
+
+    # Auto-trigger check for low stock
+    check_low_stock_alerts()
+
     return _serialise_timestamps(validated)
 
 
@@ -175,6 +210,10 @@ def update_blood_unit(unit_id: str, data: dict) -> Optional[dict]:
     doc_ref.update(update_data)
     existing.update(update_data)
     existing["id"] = unit_id
+
+    # Auto-trigger check for low stock
+    check_low_stock_alerts()
+
     return _serialise_timestamps(existing)
 
 
@@ -194,6 +233,10 @@ def delete_blood_unit(unit_id: str) -> bool:
         return False
     doc_ref.delete()
     logger.info("Blood unit deleted: %s", unit_id)
+
+    # Auto-trigger check for low stock
+    check_low_stock_alerts()
+
     return True
 
 

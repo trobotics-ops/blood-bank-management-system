@@ -35,7 +35,7 @@ export async function loginWithGoogle() {
   const result = await signInWithPopup(auth, googleProvider);
 
   try {
-    await apiPost('/api/users/register', {
+    await apiPost('/api/auth/register', {
       email: result.user.email,
       displayName: result.user.displayName || '',
       role: 'donor',

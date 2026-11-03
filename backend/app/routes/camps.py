@@ -13,6 +13,37 @@ logger = logging.getLogger(__name__)
 camps_bp = Blueprint("camps", __name__, url_prefix="/api/camps")
 
 
+@camps_bp.route("/my", methods=["GET"])
+@require_auth
+def get_my_camps():
+    """Get camps the current donor is registered for.
+
+    Returns:
+        200: List of camps the donor has registered for.
+        404: No donor profile found.
+    """
+    uid = request.user["uid"]
+    donor = donor_service.get_donor_by_uid(uid)
+    if not donor:
+        return jsonify([]), 200
+
+    donor_id = donor["id"]
+    all_camps = camp_service.list_camps(limit=500)
+    my_camps = [c for c in all_camps if donor_id in (c.get("registeredDonors") or [])]
+    return jsonify(my_camps), 200
+
+
+@camps_bp.route("/reminders", methods=["POST"])
+def trigger_camp_reminders():
+    """Trigger email/system reminders for camps happening tomorrow.
+
+    Returns:
+        200: Count of reminders dispatched.
+    """
+    sent = camp_service.send_camp_reminders()
+    return jsonify({"message": f"Dispatched {sent} camp reminder(s)", "remindersSent": sent}), 200
+
+
 @camps_bp.route("", methods=["GET"])
 @require_auth
 def list_camps():
@@ -58,6 +89,30 @@ def create_camp():
         return jsonify({"error": err.messages, "status": 400}), 400
 
     return jsonify(camp), 201
+
+
+@camps_bp.route("/<camp_id>/registrations", methods=["GET"])
+@require_auth
+@require_role("admin")
+def get_camp_registrations(camp_id: str):
+    """Get list of registered donors for a camp (Admin only).
+
+    Returns:
+        200: List of donor profiles registered for the camp.
+        404: Camp not found.
+    """
+    camp = camp_service.get_camp_by_id(camp_id)
+    if not camp:
+        return jsonify({"error": "Camp not found", "status": 404}), 404
+
+    registered_ids = camp.get("registeredDonors") or []
+    donors = []
+    for did in registered_ids:
+        d = donor_service.get_donor_by_id(did)
+        if d:
+            donors.append(d)
+
+    return jsonify(donors), 200
 
 
 @camps_bp.route("/<camp_id>", methods=["GET"])
@@ -133,6 +188,7 @@ def register_for_camp(camp_id: str):
 
 
 @camps_bp.route("/<camp_id>/unregister", methods=["POST"])
+@camps_bp.route("/<camp_id>/register", methods=["DELETE"])
 @require_auth
 @require_role("donor")
 def unregister_from_camp(camp_id: str):

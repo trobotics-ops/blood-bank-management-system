@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPut, apiDelete } from './api';
+import { apiGet, apiPost, apiPut, apiPatch, apiDelete } from './api';
 
 export async function getAllCamps(params = {}) {
   const query = new URLSearchParams(params).toString();
@@ -17,6 +17,10 @@ export async function updateCamp(id, campData) {
   return apiPut(`/api/camps/${id}`, campData);
 }
 
+export async function completeCamp(id, unitsCollected) {
+  return apiPatch(`/api/camps/${id}/complete`, { unitsCollected });
+}
+
 export async function deleteCamp(id) {
   return apiDelete(`/api/camps/${id}`);
 }
@@ -26,7 +30,7 @@ export async function registerForCamp(campId) {
 }
 
 export async function unregisterFromCamp(campId) {
-  return apiDelete(`/api/camps/${campId}/register`);
+  return apiPost(`/api/camps/${campId}/unregister`);
 }
 
 export async function getMyCamps() {
