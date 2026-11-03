@@ -1,10 +1,32 @@
 steps:
-  # 1. Build backend container image using modern Artifact Registry
+  # 1. Install frontend dependencies
+  - name: 'node:22'
+    id: 'install-frontend'
+    dir: 'frontend'
+    entrypoint: npm
+    args: ['install']
+
+  # 2. Build frontend production bundle
+  - name: 'node:22'
+    id: 'build-frontend'
+    dir: 'frontend'
+    entrypoint: npm
+    args: ['run', 'build']
+    env:
+      - 'VITE_FIREBASE_PROJECT_ID=$PROJECT_ID'
+      - 'VITE_API_URL='
+
+  # 3. Copy frontend distribution into backend static assets
+  - name: 'bash'
+    id: 'copy-frontend-to-backend'
+    args: ['cp', '-r', 'frontend/dist', 'backend/static_dist']
+
+  # 4. Build unified full-stack container image
   - name: 'gcr.io/cloud-builders/docker'
     id: 'build-backend-image'
     args: ['build', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/blood-bank-api:$BUILD_ID', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/blood-bank-api:latest', './backend']
 
-  # 2. Push backend container image
+  # 5. Push backend container image
   - name: 'gcr.io/cloud-builders/docker'
     id: 'push-backend-image'
     args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/blood-bank-api:$BUILD_ID']
@@ -13,7 +35,7 @@ steps:
     id: 'push-latest-image'
     args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/blood-bank-api:latest']
 
-  # 3. Deploy backend to Google Cloud Run
+  # 6. Deploy full-stack service to Google Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: 'deploy-cloud-run'
     entrypoint: gcloud
@@ -34,23 +56,6 @@ steps:
       - '512Mi'
       - '--timeout'
       - '300'
-
-  # 4. Install frontend dependencies
-  - name: 'node:22'
-    id: 'install-frontend'
-    dir: 'frontend'
-    entrypoint: npm
-    args: ['install']
-
-  # 5. Build frontend production bundle
-  - name: 'node:22'
-    id: 'build-frontend'
-    dir: 'frontend'
-    entrypoint: npm
-    args: ['run', 'build']
-    env:
-      - 'VITE_FIREBASE_PROJECT_ID=$PROJECT_ID'
-      - 'VITE_API_URL=https://blood-bank-api-bf7gjvo7yq-uc.a.run.app'
 
 images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/blood-bank-api:$BUILD_ID'

@@ -88,5 +88,25 @@ def create_app(config_class=Config) -> Flask:
     def health():
         return {"status": "healthy", "service": "blood-bank-api"}, 200
 
+    # --------------- Static SPA Frontend Serving ---------------
+    from flask import send_from_directory
+
+    dist_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "static_dist"))
+    if not os.path.exists(dist_dir):
+        dist_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist"))
+
+    if os.path.exists(dist_dir):
+        logger.info("Serving SPA static files from: %s", dist_dir)
+
+        @app.route("/", defaults={"path": ""})
+        @app.route("/<path:path>")
+        def serve_spa(path):
+            if path and path.startswith("api/"):
+                return {"error": "API route not found"}, 404
+            file_path = os.path.join(dist_dir, path)
+            if path and os.path.exists(file_path) and os.path.isfile(file_path):
+                return send_from_directory(dist_dir, path)
+            return send_from_directory(dist_dir, "index.html")
+
     logger.info("Flask app created successfully.")
     return app
