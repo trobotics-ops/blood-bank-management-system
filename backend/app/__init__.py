@@ -47,11 +47,33 @@ def create_app(config_class=Config) -> Flask:
             })
             logger.info("Firebase Admin SDK initialised with service account.")
         else:
-            # On Cloud Run, default credentials are available automatically
-            firebase_admin.initialize_app(options={
-                "projectId": app.config.get("FIREBASE_PROJECT_ID"),
-            })
-            logger.info("Firebase Admin SDK initialised with default credentials.")
+            # On Cloud Run, default credentials are available automatically;
+            # locally, fallback to gcloud access token if default creds are missing.
+            try:
+                firebase_admin.initialize_app(options={
+                    "projectId": app.config.get("FIREBASE_PROJECT_ID"),
+                })
+                from firebase_admin import firestore as _fs
+                _fs.client()
+                logger.info("Firebase Admin SDK initialised with default credentials.")
+            except Exception:
+                if firebase_admin._apps:
+                    del firebase_admin._apps["[DEFAULT]"]
+                try:
+                    import subprocess, google.oauth2.credentials
+                    cmd = [r"C:\Users\REYANCE\AppData\Local\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd", "auth", "print-access-token"]
+                    token = subprocess.run(cmd, capture_output=True, text=True, timeout=5).stdout.strip()
+                    class TokenCredential(credentials.Base):
+                        def __init__(self, t):
+                            self._token = t
+                        def get_credential(self):
+                            return google.oauth2.credentials.Credentials(self._token)
+                    firebase_admin.initialize_app(TokenCredential(token), {
+                        "projectId": app.config.get("FIREBASE_PROJECT_ID"),
+                    })
+                    logger.info("Firebase Admin SDK initialised with gcloud user credentials.")
+                except Exception as ex:
+                    logger.warning("Could not initialise Firebase with gcloud credentials: %s", ex)
 
     # --------------- Flask-Mail ---------------
     mail.init_app(app)

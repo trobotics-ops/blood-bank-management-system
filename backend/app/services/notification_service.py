@@ -75,7 +75,6 @@ def get_notifications_for_user(uid: str, limit: int = 50) -> list[dict]:
     docs = (
         db.collection(COLLECTION)
         .where(filter=FieldFilter("recipientUid", "==", uid))
-        .order_by("createdAt", direction=firestore.Query.DESCENDING)
         .limit(limit)
         .stream()
     )
@@ -86,8 +85,10 @@ def get_notifications_for_user(uid: str, limit: int = 50) -> list[dict]:
         d["id"] = doc.id
         # Serialise timestamps
         if d.get("createdAt"):
-            d["createdAt"] = d["createdAt"].isoformat() if hasattr(d["createdAt"], "isoformat") else d["createdAt"]
+            d["createdAt"] = d["createdAt"].isoformat() if hasattr(d["createdAt"], "isoformat") else str(d["createdAt"])
         results.append(d)
+
+    results.sort(key=lambda x: str(x.get("createdAt") or ""), reverse=True)
     return results
 
 
