@@ -33,13 +33,23 @@ def get_current_user():
     if not doc.exists:
         if uid.startswith("demo-"):
             role = request.user.get("role", "donor")
+            names = {
+                "admin": "Indian Red Cross Society Admin",
+                "hospital": "AIIMS Bhubaneswar Staff",
+                "donor": "Aarav Sharma",
+            }
+            orgs = {
+                "admin": "Indian Red Cross Society (IRCS)",
+                "hospital": "AIIMS Hospital Bhubaneswar",
+                "donor": "",
+            }
             return jsonify({
                 "uid": uid,
                 "email": request.user.get("email"),
-                "displayName": f"Demo {role.capitalize()}",
+                "displayName": names.get(role, f"Demo {role.capitalize()}"),
                 "role": role,
-                "phone": "+1-555-0199",
-                "organizationName": "City General Hospital" if role == "hospital" else "",
+                "phone": "+91-98765-43210",
+                "organizationName": orgs.get(role, ""),
             }), 200
         return jsonify({"error": "User profile not found", "status": 404}), 404
 
@@ -83,13 +93,23 @@ def update_current_user():
     if not doc.exists:
         if uid.startswith("demo-"):
             role = request.user.get("role", "donor")
+            names = {
+                "admin": "Indian Red Cross Society Admin",
+                "hospital": "AIIMS Bhubaneswar Staff",
+                "donor": "Aarav Sharma",
+            }
+            orgs = {
+                "admin": "Indian Red Cross Society (IRCS)",
+                "hospital": "AIIMS Hospital Bhubaneswar",
+                "donor": "",
+            }
             return jsonify({
                 "uid": uid,
                 "email": request.user.get("email"),
-                "displayName": f"Demo {role.capitalize()}",
+                "displayName": names.get(role, f"Demo {role.capitalize()}"),
                 "role": role,
-                "phone": "+1-555-0199",
-                "organizationName": "City General Hospital" if role == "hospital" else "",
+                "phone": "+91-98765-43210",
+                "organizationName": orgs.get(role, ""),
             }), 200
         return jsonify({"error": "User profile not found", "status": 404}), 404
 

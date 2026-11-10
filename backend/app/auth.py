@@ -35,9 +35,14 @@ def require_auth(f: Callable) -> Callable:
         if id_token.startswith("demo-token-"):
             role = id_token.replace("demo-token-", "").lower()
             valid_role = role if role in ["admin", "hospital", "donor"] else "donor"
+            emails = {
+                "admin": "admin@bloodbank.org.in",
+                "hospital": "aiims.bbsr@healthcare.gov.in",
+                "donor": "aarav.sharma@example.com",
+            }
             request.user = {
                 "uid": f"demo-{valid_role}-uid",
-                "email": f"{valid_role}@bloodbank.org",
+                "email": emails.get(valid_role, f"{valid_role}@bloodbank.org.in"),
                 "role": valid_role,
             }
             return f(*args, **kwargs)

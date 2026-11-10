@@ -64,17 +64,33 @@ export function AuthProvider({ children }) {
 
   const loginAsDemo = (role = 'admin') => {
     const validRole = ['admin', 'hospital', 'donor'].includes(role) ? role : 'donor';
+    const names = {
+      admin: 'Indian Red Cross Admin',
+      hospital: 'AIIMS Bhubaneswar Staff',
+      donor: 'Aarav Sharma',
+    };
+    const emails = {
+      admin: 'admin@bloodbank.org.in',
+      hospital: 'aiims.bbsr@healthcare.gov.in',
+      donor: 'aarav.sharma@example.com',
+    };
+    const orgs = {
+      admin: 'Indian Red Cross Society (IRCS)',
+      hospital: 'AIIMS Hospital Bhubaneswar',
+      donor: '',
+    };
     const demoUser = {
       uid: `demo-${validRole}-uid`,
-      email: `${validRole}@bloodbank.org`,
-      displayName: `Demo ${validRole.charAt(0).toUpperCase() + validRole.slice(1)}`,
+      email: emails[validRole],
+      displayName: names[validRole],
     };
     const demoProfile = {
       uid: `demo-${validRole}-uid`,
-      email: `${validRole}@bloodbank.org`,
-      displayName: `Demo ${validRole.charAt(0).toUpperCase() + validRole.slice(1)}`,
+      email: emails[validRole],
+      displayName: names[validRole],
       role: validRole,
-      organizationName: validRole === 'hospital' ? 'City General Hospital' : '',
+      organizationName: orgs[validRole],
+      phone: '+91-98765-43210',
     };
 
     localStorage.setItem('demo_token', `demo-token-${validRole}`);
