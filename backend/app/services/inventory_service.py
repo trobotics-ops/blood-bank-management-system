@@ -166,12 +166,22 @@ def list_blood_units(
     if component:
         query = query.where(filter=FieldFilter("component", "==", component))
 
-    docs = query.order_by("createdAt", direction=firestore.Query.DESCENDING).limit(limit).stream()
     results = []
-    for doc in docs:
-        data = doc.to_dict()
-        data["id"] = doc.id
-        results.append(_serialise_timestamps(data))
+    try:
+        docs = query.order_by("createdAt", direction=firestore.Query.DESCENDING).limit(limit).stream()
+        for doc in docs:
+            data = doc.to_dict()
+            data["id"] = doc.id
+            results.append(_serialise_timestamps(data))
+    except Exception as exc:
+        logger.warning("Order-by query failed for inventory, sorting in memory: %s", exc)
+        docs = query.limit(limit).stream()
+        for doc in docs:
+            data = doc.to_dict()
+            data["id"] = doc.id
+            results.append(_serialise_timestamps(data))
+        results.sort(key=lambda u: str(u.get("createdAt") or ""), reverse=True)
+
     return results
 
 

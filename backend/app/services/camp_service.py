@@ -98,12 +98,22 @@ def list_camps(
     if status:
         query = query.where(filter=FieldFilter("status", "==", status))
 
-    docs = query.order_by("createdAt", direction=firestore.Query.DESCENDING).limit(limit).stream()
     results = []
-    for doc in docs:
-        data = doc.to_dict()
-        data["id"] = doc.id
-        results.append(_serialise_timestamps(data))
+    try:
+        docs = query.order_by("createdAt", direction=firestore.Query.DESCENDING).limit(limit).stream()
+        for doc in docs:
+            data = doc.to_dict()
+            data["id"] = doc.id
+            results.append(_serialise_timestamps(data))
+    except Exception as exc:
+        logger.warning("Order-by query failed for camps, sorting in memory: %s", exc)
+        docs = query.limit(limit).stream()
+        for doc in docs:
+            data = doc.to_dict()
+            data["id"] = doc.id
+            results.append(_serialise_timestamps(data))
+        results.sort(key=lambda c: str(c.get("createdAt") or ""), reverse=True)
+
     return results
 
 
