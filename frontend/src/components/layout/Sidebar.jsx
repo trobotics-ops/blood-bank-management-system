@@ -5,104 +5,104 @@ import { cn } from '../../lib/utils';
 import {
   LayoutDashboard,
   Users,
-  Droplets,
   ClipboardList,
   Tent,
   Package,
-  Search,
-  UserPlus,
-  PlusCircle,
-  AlertTriangle,
-  BarChart3,
-  CalendarPlus,
-  CalendarCheck,
+  Activity,
   X,
+  ShieldCheck,
+  Building2,
+  Heart,
 } from 'lucide-react';
 import { Button } from '../ui/button';
-import { Separator } from '../ui/separator';
 
-const menuItems = {
+// Clean, streamlined navigation per role (redundant search/add/filter sub-tabs consolidated)
+const roleMenuItems = {
   admin: [
-    { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { type: 'separator', label: 'Management' },
-    { label: 'All Donors', path: '/donors', icon: Users },
-    { label: 'Search Donors', path: '/donors/search', icon: Search },
-    { type: 'separator', label: 'Inventory' },
-    { label: 'Blood Inventory', path: '/inventory', icon: Package },
-    { label: 'Add Blood Unit', path: '/inventory/add', icon: PlusCircle },
-    { label: 'Blood Stock', path: '/inventory/stock', icon: BarChart3 },
-    { label: 'Expiring Units', path: '/inventory/expiring', icon: AlertTriangle },
-    { type: 'separator', label: 'Requests' },
-    { label: 'All Requests', path: '/requests', icon: ClipboardList },
-    { type: 'separator', label: 'Camps' },
-    { label: 'All Camps', path: '/camps', icon: Tent },
-    { label: 'Create Camp', path: '/camps/create', icon: CalendarPlus },
+    { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, badge: null },
+    { label: 'Blood Inventory', path: '/inventory', icon: Package, badge: 'Live' },
+    { label: 'Donors Directory', path: '/donors', icon: Users, badge: null },
+    { label: 'Blood Requests', path: '/requests', icon: ClipboardList, badge: null },
+    { label: 'Donation Camps', path: '/camps', icon: Tent, badge: null },
   ],
   hospital: [
-    { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { type: 'separator', label: 'Search' },
-    { label: 'Search Donors', path: '/donors/search', icon: Search },
-    { label: 'Blood Stock', path: '/inventory/stock', icon: BarChart3 },
-    { type: 'separator', label: 'Requests' },
-    { label: 'My Requests', path: '/requests', icon: ClipboardList },
-    { label: 'New Request', path: '/requests/new', icon: PlusCircle },
-    { type: 'separator', label: 'Camps' },
-    { label: 'Blood Camps', path: '/camps', icon: Tent },
+    { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, badge: null },
+    { label: 'Blood Requisitions', path: '/requests', icon: ClipboardList, badge: 'Track' },
+    { label: 'Blood Stock', path: '/inventory/stock', icon: Package, badge: null },
+    { label: 'Donation Camps', path: '/camps', icon: Tent, badge: null },
   ],
   donor: [
-    { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { type: 'separator', label: 'Profile' },
-    { label: 'My Profile', path: '/donors/profile', icon: Users },
-    { label: 'Register as Donor', path: '/donors/register', icon: UserPlus },
-    { type: 'separator', label: 'Blood' },
-    { label: 'Blood Stock', path: '/inventory/stock', icon: BarChart3 },
-    { type: 'separator', label: 'Camps' },
-    { label: 'Upcoming Camps', path: '/camps', icon: Tent },
-    { label: 'My Camps', path: '/camps/my', icon: CalendarCheck },
+    { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, badge: null },
+    { label: 'My Donor Profile', path: '/donors/profile', icon: Users, badge: null },
+    { label: 'Donation Camps', path: '/camps', icon: Tent, badge: 'Explore' },
+    { label: 'Blood Availability', path: '/inventory/stock', icon: Activity, badge: null },
   ],
 };
 
+const roleMeta = {
+  admin: {
+    label: 'System Admin',
+    icon: ShieldCheck,
+    color: 'bg-red-50 text-red-700 border-red-200',
+    dot: 'bg-red-500',
+  },
+  hospital: {
+    label: 'Hospital Partner',
+    icon: Building2,
+    color: 'bg-blue-50 text-blue-700 border-blue-200',
+    dot: 'bg-blue-500',
+  },
+  donor: {
+    label: 'Blood Donor',
+    icon: Heart,
+    color: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    dot: 'bg-emerald-500',
+  },
+};
+
 export default function Sidebar({ isOpen, onClose }) {
-  const { userProfile } = useAuth();
+  const { userProfile, user } = useAuth();
   const role = userProfile?.role || 'donor';
-  const items = menuItems[role] || menuItems.donor;
+  const items = roleMenuItems[role] || roleMenuItems.donor;
+  const currentRoleMeta = roleMeta[role] || roleMeta.donor;
+  const RoleIcon = currentRoleMeta.icon;
 
   return (
     <>
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-xs lg:hidden"
           onClick={onClose}
         />
       )}
 
       <aside
         className={cn(
-          'fixed left-0 top-16 z-40 h-[calc(100vh-4rem)] w-64 border-r border-border bg-background transition-transform duration-300 ease-in-out lg:translate-x-0',
+          'fixed left-0 top-16 z-40 h-[calc(100vh-4rem)] w-64 border-r border-slate-200/80 bg-white/95 backdrop-blur-md transition-transform duration-300 ease-in-out lg:translate-x-0 flex flex-col justify-between shadow-xs',
           isOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
-        <div className="flex flex-col h-full">
-          <div className="flex items-center justify-between p-4 lg:hidden">
-            <span className="font-semibold text-foreground">Navigation</span>
-            <Button variant="ghost" size="icon" onClick={onClose}>
+        <div className="flex flex-col flex-1 overflow-hidden">
+          {/* Mobile Header Close */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 lg:hidden">
+            <span className="font-semibold text-slate-800 text-sm">Navigation Menu</span>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500" onClick={onClose}>
               <X className="h-4 w-4" />
             </Button>
           </div>
 
-          <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-            {items.map((item, index) => {
-              if (item.type === 'separator') {
-                return (
-                  <div key={index} className="pt-4 pb-2">
-                    <p className="px-3 text-xs font-semibold uppercase tracking-wider text-muted">
-                      {item.label}
-                    </p>
-                    <Separator className="mt-2" />
-                  </div>
-                );
-              }
+          {/* Role Status Tag */}
+          <div className="px-4 pt-4 pb-2">
+            <div className={cn('flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-medium', currentRoleMeta.color)}>
+              <RoleIcon className="h-4 w-4 shrink-0" />
+              <span className="truncate flex-1">{currentRoleMeta.label}</span>
+              <span className={cn('h-2 w-2 rounded-full shrink-0 animate-pulse', currentRoleMeta.dot)} />
+            </div>
+          </div>
 
+          {/* Streamlined Main Nav Links */}
+          <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-1">
+            {items.map((item) => {
               const Icon = item.icon;
               return (
                 <NavLink
@@ -111,24 +111,58 @@ export default function Sidebar({ isOpen, onClose }) {
                   onClick={onClose}
                   className={({ isActive }) =>
                     cn(
-                      'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                      'group relative flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all duration-150',
                       isActive
-                        ? 'bg-accent text-primary'
-                        : 'text-muted hover:bg-secondary hover:text-foreground'
+                        ? 'bg-red-50/90 text-red-700 font-semibold shadow-xs border border-red-100/70'
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                     )
                   }
                 >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  <span>{item.label}</span>
+                  {({ isActive }) => (
+                    <>
+                      {isActive && (
+                        <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-red-600" />
+                      )}
+                      <Icon
+                        className={cn(
+                          'h-4 w-4 shrink-0 transition-colors',
+                          isActive ? 'text-red-600' : 'text-slate-400 group-hover:text-slate-700'
+                        )}
+                      />
+                      <span className="flex-1 truncate">{item.label}</span>
+                      {item.badge && (
+                        <span
+                          className={cn(
+                            'text-[10px] font-semibold px-1.5 py-0.5 rounded-md border',
+                            isActive
+                              ? 'bg-red-100 text-red-800 border-red-200'
+                              : 'bg-slate-100 text-slate-600 border-slate-200'
+                          )}
+                        >
+                          {item.badge}
+                        </span>
+                      )}
+                    </>
+                  )}
                 </NavLink>
               );
             })}
           </nav>
+        </div>
 
-          <div className="border-t border-border p-4">
-            <div className="rounded-md bg-accent/50 p-3">
-              <p className="text-xs font-medium text-primary">Blood Bank System</p>
-              <p className="text-xs text-muted mt-1">v1.0.0 — Cloud Edition</p>
+        {/* Compact Footer Profile Card */}
+        <div className="p-3 border-t border-slate-100 bg-slate-50/50">
+          <div className="flex items-center gap-3 p-2 rounded-xl bg-white border border-slate-200/70 shadow-xs">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-600 text-white font-semibold text-xs shadow-xs">
+              {user?.displayName?.charAt(0)?.toUpperCase() ||
+                user?.email?.charAt(0)?.toUpperCase() ||
+                'U'}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold text-slate-900 truncate">
+                {user?.displayName || user?.email?.split('@')[0] || 'Logged In'}
+              </p>
+              <p className="text-[11px] text-slate-500 truncate">{user?.email || 'Demo Session'}</p>
             </div>
           </div>
         </div>

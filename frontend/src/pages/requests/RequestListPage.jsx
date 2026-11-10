@@ -201,20 +201,20 @@ export default function RequestListPage() {
       </div>
 
       {/* Filter and Search Bar */}
-      <Card>
+      <Card className="border border-slate-200/80 shadow-xs rounded-2xl bg-white">
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
                 placeholder="Search by hospital, patient, blood type..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-10"
+                className="pl-10 rounded-xl border-slate-200"
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-48">
+              <SelectTrigger className="w-full sm:w-44 rounded-xl border-slate-200">
                 <SelectValue placeholder="All Statuses" />
               </SelectTrigger>
               <SelectContent>

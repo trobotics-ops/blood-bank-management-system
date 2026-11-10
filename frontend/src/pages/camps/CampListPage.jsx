@@ -52,6 +52,7 @@ export default function CampListPage() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
   const [search, setSearch] = useState('');
+  const [viewScope, setViewScope] = useState('all'); // 'all' | 'my'
 
   // Complete camp modal state
   const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
@@ -131,6 +132,10 @@ export default function CampListPage() {
   };
 
   const filtered = camps.filter((c) => {
+    if (viewScope === 'my') {
+      const isReg = donorProfile?.id && (c.registeredDonors || []).includes(donorProfile.id);
+      if (!isReg) return false;
+    }
     const matchesStatus = statusFilter === 'all' || c.status?.toLowerCase() === statusFilter.toLowerCase();
     const query = search.toLowerCase();
     const matchesSearch =
@@ -178,20 +183,46 @@ export default function CampListPage() {
       </div>
 
       {/* Filter and Search Bar */}
-      <Card>
+      <Card className="border border-slate-200/80 shadow-xs rounded-2xl bg-white">
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row gap-3">
+            {isDonor && (
+              <div className="flex rounded-xl bg-slate-100 p-1 border border-slate-200/80 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setViewScope('all')}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                    viewScope === 'all'
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  All Camps
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewScope('my')}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                    viewScope === 'my'
+                      ? 'bg-white text-red-700 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  My Registrations
+                </button>
+              </div>
+            )}
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
                 placeholder="Search camps by name, venue, city, organizer..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-10"
+                className="pl-10 rounded-xl border-slate-200"
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-48">
+              <SelectTrigger className="w-full sm:w-44 rounded-xl border-slate-200">
                 <SelectValue placeholder="All Statuses" />
               </SelectTrigger>
               <SelectContent>

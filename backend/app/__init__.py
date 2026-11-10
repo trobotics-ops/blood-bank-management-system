@@ -111,7 +111,13 @@ def create_app(config_class=Config) -> Flask:
         return {"status": "healthy", "service": "blood-bank-api"}, 200
 
     # --------------- Static SPA Frontend Serving ---------------
-    from flask import send_from_directory
+    from flask import send_from_directory, abort
+    import mimetypes
+
+    mimetypes.init()
+    mimetypes.add_type('text/css', '.css')
+    mimetypes.add_type('application/javascript', '.js')
+    mimetypes.add_type('image/svg+xml', '.svg')
 
     dist_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "static_dist"))
     if not os.path.exists(dist_dir):
@@ -127,7 +133,17 @@ def create_app(config_class=Config) -> Flask:
                 return {"error": "API route not found"}, 404
             file_path = os.path.join(dist_dir, path)
             if path and os.path.exists(file_path) and os.path.isfile(file_path):
-                return send_from_directory(dist_dir, path)
+                mimetype = None
+                if path.endswith(".css"):
+                    mimetype = "text/css"
+                elif path.endswith(".js"):
+                    mimetype = "application/javascript"
+                elif path.endswith(".svg"):
+                    mimetype = "image/svg+xml"
+                return send_from_directory(dist_dir, path, mimetype=mimetype)
+            # Never serve index.html for missing asset or extension files
+            if "." in os.path.basename(path):
+                return abort(404)
             return send_from_directory(dist_dir, "index.html")
 
     logger.info("Flask app created successfully.")

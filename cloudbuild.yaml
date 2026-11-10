@@ -20,7 +20,8 @@ steps:
   # 3. Copy frontend distribution into backend static assets
   - name: 'bash'
     id: 'copy-frontend-to-backend'
-    args: ['cp', '-r', 'frontend/dist', 'backend/static_dist']
+    entrypoint: 'bash'
+    args: ['-c', 'rm -rf backend/static_dist && cp -r frontend/dist backend/static_dist']
 
   # 4. Build unified full-stack container image
   - name: 'gcr.io/cloud-builders/docker'
